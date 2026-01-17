@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from datetime import datetime
 from cli import command, Color
@@ -6,6 +7,16 @@ from cli import command, Color
 __author__ = "Sebastian Januchowski"
 __category__ = "io"
 __group__ = "core"
+
+def highlight_content(content, extension):
+    """Simple syntax highlighting for specific file types."""
+    if extension == ".json":
+        # Highlight JSON keys (text in quotes before a colon)
+        return re.sub(r'(".*?")\s*:', f"{Color.CYAN}\\1{Color.RESET}:", content)
+    elif extension == ".py":
+        # Highlight Python comments
+        return re.sub(r'(#.*)', f"{Color.GRAY}\\1{Color.RESET}", content)
+    return content
 
 @command(name="print", aliases=["cat", "type"])
 def print_file(*args):
@@ -18,10 +29,14 @@ def print_file(*args):
         print(f"  cat <file_path>")
         print(f"  type <file_path>")
         print(f"\n{Color.CYAN}Description:{Color.RESET}")
-        print("  Displays file content in the console and saves a copy to history logs.")
+        print("  Displays file content in the console with basic syntax highlighting.")
+        print("  Saves a copy to history logs.")
         print(f"  Logs are stored in: %userprofile%\\.polsoft\\psCLI\\History\\print.log")
         print(f"\n{Color.CYAN}Supported file types:{Color.RESET}")
         print("  .txt, .json, .py, .log, .md, .csv, .yaml, .xml")
+        print(f"\n{Color.GRAY}author:  Sebastian Januchowski")
+        print("email:   polsoft.its@fastservice.com")
+        print(f"github:  https://github.com/seb07uk{Color.RESET}")
         return
     
     filepath = args[0]
@@ -38,13 +53,14 @@ def print_file(*args):
 
     try:
         content = path.read_text(encoding="utf-8")
+        extension = path.suffix.lower()
         
-        # Console output
+        # Console output with highlighting
         print(f"{Color.GRAY}--- Content: {filepath} ---{Color.RESET}")
-        print(content)
+        print(highlight_content(content, extension))
         print(f"{Color.GRAY}--- End of file ---{Color.RESET}")
 
-        # Logging to print.log
+        # Logging to print.log (saving clean text without ANSI codes)
         log_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(log_file, "a", encoding="utf-8") as f:
